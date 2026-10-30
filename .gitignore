@@ -1,0 +1,28 @@
+# Build output
+*.pbo
+*.bisign
+@ChillSpawn/
+dist/
+output/
+
+# Signing keys: never commit private keys (.bikey is public and fine to share)
+*.biprivatekey
+
+# Secrets
+.env
+.env.*
+*.key
+*.pem
+
+# Server runtime data
+profiles/
+*.rpt
+*.log
+*.mdmp
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
