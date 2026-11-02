@@ -4,19 +4,22 @@
 
 > Tłumaczenie maszynowe. W razie rozbieżności obowiązuje [angielski oryginał](README.md).
 
-Serwerowy mod do DayZ. Gracze wpisują `!car` na czacie, aby przywołać czerwony Olga 24 gotowy do jazdy, znajdujący się sześć metrów na północ od nich: z czterema kołami, świecą zapłonową, radiatorem, naładowaną baterią, reflektorami, drzwiami, maską i bagażnikiem, w pełni zatankowany płynami (paliwo, chłodniczy, olej, płyn hamulcowy). Jeśli to miejsce jest zablokowane lub znajduje się w wodzie, skrypt próbuje pobliskich lokalizacji; jeśli żadna nie jest wolna, gracz zostaje poproszony o zmianę pozycji, a ta próba nie jest liczona do limitu. Otrzymuje prywatną wiadomość informującą, że pojazd zniknie po 15 minutach. Każdy gracz może przywołać 3 pojazdy na godzinę rozgrywki (czas połączenia z serwerem, a nie czas rzeczywisty).
+Mod do serwera DayZ. Gracze wpisują `!car` na czacie, aby przywołać czerwony Olęga 24 gotowy do jazdy, umieszczony sześć metrów na północ od nich: z czterema kołami, świecą, radiatorem, naładowaną baterią, reflektorami, drzwiami, maską i bagażnikiem, pełnym zbiornikiem paliwa, płynu chłodniczego, oleju i płynu hamulcowego. Jeśli to miejsce jest zablokowane lub znajduje się w wodzie, skrypt próbuje pobliskich lokalizacji; jeśli żadna nie jest wolna, gracz zostaje poproszony o zmianę miejsca, a próba nie jest doliczana do limitu. Otrzymują prywatną wiadomość informującą, że pojazd zniknie po 15 minutach. Każdy gracz może przywołać jednego Olęga co 15 minut czasu gry (czas połączenia, a nie czas rzeczywisty). Przywołane samochody nie przyjmują obrażeń, a nikomu w środku nie dzieje się krzywda podczas kolizji.
 
-Klientom nie jest wymagany ten mod. Ładuj go za pomocą `-servermod=@ChillSpawn`. Napisany dla DayZ 1.30.
+Gracze mogą również wpisywać `!survive` raz na każde 2 godziny czasu rzeczywistego, aby otrzymać mały zestaw przetrwania. Administratorzy nie mają żadnych limitów i otrzymują `!adminkit`.
 
-> **Status: nietestowany.** Kod został napisany przy użyciu Claude i nie został jeszcze skompilowany ani uruchomiony na serwerze. Zobacz [Znane ograniczenia / przetestuj najpierw](#znane-ograniczenia--przetestuj-najpierw) przed użyciem go na live'owym serwerze. [docs/PROMPTING.md](docs/PROMPTING.pl.md) pokazuje, jak powstał ten mod.
+Klientom nie jest potrzebny ten mod. Ładuj go za pomocą `-servermod=@ChillSpawn`. Stworzony dla DayZ 1.30.
 
-## Struktura plików
+> **Status: przetestowano na DayZ 1.30 experimental.** `!help`, `!list`, `!car`, `!ada` i `!hatchet` działają na żywym serwerze bez klienta z modyfikacją. Administratorzy, zestawy (`kits`), `!survive` oraz ochrona pojazdów to nowe funkcje, które nie zostały jeszcze przetestowane. Zobacz [Znane ograniczenia / testuj najpierw](#znane-ograniczenia--testuj-najpierw). [docs/PROMPTING.md](docs/PROMPTING.pl.md) pokazuje, jak powstał ten mod.
+
+## Struktura
 
 ```
 ChillSpawn/                    -> packs to @ChillSpawn/addons/ChillSpawn.pbo
   config.cpp                   CfgPatches/CfgMods, script modules
   scripts/3_Game/ChillSpawn/   CS_Config (JSON config), CS_PlayerTracker (playtime + rate limit)
-  scripts/4_World/ChillSpawn/  CS_Core, CS_Commands, CS_VehicleSpawner, CS_Messenger
+  scripts/4_World/ChillSpawn/  CS_Core, CS_Commands, CS_VehicleSpawner, CS_KitSpawner,
+                               CS_CarProtection, CS_Messenger
   scripts/5_Mission/ChillSpawn/ MissionServer hooks (chat, connect, disconnect)
 config.example.json            the default config, for reference
 docs/PROMPTING.md              how this mod was made with Claude, and prompts to make your own
@@ -25,41 +28,73 @@ tools/build-linux.sh           builds the PBO on Linux (see Building)
 
 ## Konfiguracja
 
-Przy pierwszym uruchomieniu mod zapisuje `$profile:ChillSpawn/config.json` (w folderze `-profiles` serwera). Każdy preset w `Presets` staje się osobnym poleceniem czatu, dzięki czemu właściciele serwerów mogą dodawać więcej pojazdów lub przedmiotów bez dotykania kodu. Domyślna konfiguracja zawiera trzy presety:
+Przy pierwszym uruchomieniu mod zapisuje `$profile:ChillSpawn/config.json` (w folderze `-profiles` serwera). Każda pozycja w `Presets` i `Kits` staje się osobnym poleceniem czatu, więc właściciele serwerów mogą dodawać więcej bez dotykania kodu. Domyślne wartości:
 
-| Polecenie | Przywołuje |
-|---|---|
-| `!car` | Czerwony Olga 24, gotowy do jazdy |
-| `!ada` | Zielony Ada 4x4, gotowy do jazdy (`OffroadHatchback_Blue` / `_White` dla innych kolorów, z pasującymi klasami `_Blue` / `_White` drzwi, maski i bagażnika) |
-| `!hatchet` | Toporek na ziemi w odległości 1 m |
+| Polecenie | Przywołuje | Limit |
+|---|---|---|
+| `!car` | Czerwony Olęg 24, gotowy do jazdy, bez obrażeń, załoga chroniona | 1 co 15 min czasu gry |
+| `!ada` | Zielona Ada 4x4, to samo (`OffroadHatchback_Blue` / `_White` dla innych kolorów, z pasującymi klasami `_Blue` / `_White` drzwi, maski i bagażnika) | 1 co 15 min czasu gry |
+| `!hatchet` | Toporek na ziemi 1 m dalej | 3 co 60 min czasu gry |
+| `!survive` | Do ekwipunku gracza: puszka boczniu, pełna butelka wody, tabletki do uzdatniania, opatrunek i tetracyklina | 1 co 2 godziny rzeczywiste |
+| `!adminkit` | Tylko dla administratorów. Na ziemi przed nimi: plecak Alice, M14 z 3 pełnymi magazynkami 20-nabojowymi i 3 pudełkami .308, M4A1 z 3 pełnymi magazynkami 60-nabojowymi i 2 tłumikami, kompletna kamizelka kuloodporna, hełm MICH z noktowizją i bateriami, kurtka TTsKO w kamuflażu, spodnie i buty, rękawice i nóż myśliwski | brak |
 
 Dwa wbudowane polecenia są zawsze dostępne:
 
 | Polecenie | Działa |
 |---|---|
-| `!list` | Wyświetla każdy preset, po jednym na linię, wraz z liczbą pozostałych przywołań w tej godzinie rozgrywki i, gdy nie ma już limitu, ile czasu zostało do odświeżenia |
-| `!help` | Wyświetla wszystkie polecenia |
+| `!list` | Wyświetla wszystko, co gracz może przywołać, po jednym na linię, z informacją o liczbie pozostałych i, gdy brak jest zasobów, ile czasu zostało do następnego |
+| `!help` | Wyświetla polecenia dostępne dla gracza |
 
-Preset nie może mieć nazwy `list` lub `help`; wbudowane komendy mają priorytet, a w logu serwera pojawi się ostrzeżenie.
+Preset lub kit nie mogą nazywać się `list` ani `help`; wbudowane wygrywają, a w logu serwera pojawia się ostrzeżenie.
 
-Każdy preset ma własny limit (3 Olgi i 3 toporki na godzinę to osobne przydziały). Aby dodać preset, skopiuj blok w `Presets`, nadaj mu nową `Command` i zrestartuj serwer. Pola:
+### Administratorzy
+
+Umieść ID Steam64 administratorów w `Admins`:
+
+```json
+"Admins": ["76561198000000000"],
+```
+
+Administratorzy nie mają limitów i mogą używać poleceń oznaczonych jako `AdminOnly`. Inni gracze nie widzą poleceń tylko dla administratorów w `!help` ani `!list`, a jeśli wpiszą jedno, nic się nie stanie.
+
+### Presety
+
+Każdy preset ma własny limit (jeden Olęg i jedna Ada co 15 minut to osobne przydziały). Aby dodać preset, skopiuj blok w `Presets`, nadaj mu nową wartość `Command` i zrestartuj serwer. Pola:
 
 | Pole | Znaczenie |
 |---|---|
 | `Command` | Polecenie czatu, bez prefiksu (`car` → `!car`) |
 | `DisplayName` | Nazwa wyświetlana w wiadomości |
 | `ClassName` | Klasa pojazdu lub przedmiotu do przywołania |
-| `Attachments` | Klasy mocowane do obiektu. Powtórz klasę dla każdego slotu, który wypełnia (cztery koła) |
+| `Attachments` | Klasy dołączane do niego. Powtórz klasę dla każdego slotu, który zajmuje (cztery koła) |
 | `DistanceMetres`, `BearingDegrees` | Miejsce przywołania względem gracza. 0° = północ, 90° = wschód |
 | `DespawnSeconds` | 0 = nigdy nie znikaj |
-| `MaxPerPlaytimeHour` | Limit przywołań na godzinę rozgrywki, liczony osobno dla każdego presetu |
+| `MaxSpawns`, `LimitMinutes` | Każdy gracz może przywołać to `MaxSpawns` razy co `LimitMinutes` minut czasu gry |
+| `AdminOnly` | Tylko administratorzy mogą tego używać |
 | `SpawnMessage` | `%1` = DisplayName, `%2` = minuty do zniknięcia |
-| `FuelFraction`, `CoolantFraction`, `OilFraction`, `BrakeFluidFraction` | Tylko pojazdy: jak pełne są płyny na start, 0 do 1 |
-| `ClearanceWidth`, `ClearanceLength`, `ClearanceHeight` | Przestrzeń (metry) wymagana w miejscu przywołania. Domyślnie pasuje do Olgi; podnieś dla ciężarówek |
+| `FuelFraction`, `CoolantFraction`, `OilFraction`, `BrakeFluidFraction` | Tylko pojazdy: jak pełne są płyny na start, od 0 do 1 |
+| `Invulnerable` | Pojazd i jego części nie przyjmują żadnych obrażeń: kolizje, pociski, eksplozje |
+| `ProtectCrew` | Tylko pojazdy: nikomu w środku nie dzieje się krzywda ani śmierć podczas kolizji |
+| `ClearanceWidth`, `ClearanceLength`, `ClearanceHeight` | Wymagana wolna przestrzeń (metry) w miejscu przywołania. Domyślne pasuje do Olęga; zwiększ dla ciężarówek |
 
-Domyślna konfiguracja jest zapisywana tylko wtedy, gdy nie istnieje plik `config.json`. Po aktualizacji moda usuń stary plik (lub dodaj nowe pola do istniejącego), aby załadować nowe domyślne ustawienia.
+### Zestawy (Kits)
 
-Czas gry i historia przywołań dla każdego gracza są zapisywane w `$profile:ChillSpawn/players/`.
+Zestaw to zbiór przedmiotów dla jednego polecenia. Pola:
+
+| Pole | Znaczenie |
+|---|---|
+| `Command`, `DisplayName` | Tak samo jak w presetach |
+| `MaxSpawns`, `LimitMinutes` | Limit na gracza |
+| `RealTimeLimit` | Licz `LimitMinutes` w czasie rzeczywistym zamiast czasu gry (przetrwaje restarty) |
+| `AdminOnly` | Tylko administratorzy mogą tego używać |
+| `ToInventory` | Umieść przedmioty w ekwipunku gracza tam, gdzie jest miejsce; reszta ląduje na ziemi. W przeciwnym razie wszystko ląduje na ziemi przed nimi |
+| `Items` | `ClassName`, `Count` i `Contents`. Związki trafiają do przedmiotu: dołączone tam, gdzie pasują (magazynki, tłumiki, baterie, kabury), w przeciwnym razie do jego ładunku, a mogą mieć własne zawartości |
+
+Przedmioty z zestawów pojawiają się nowe, magazynki i amunicja pełne, baterie naładowane, a butelki wypełnione wodą. Magazynek wymieniony w zawartości broni jest załadowany nabojem w komorze.
+
+Domyślna konfiguracja jest zapisywana tylko wtedy, gdy nie istnieje plik `config.json`. Po aktualizacji moda usuń stary plik (lub dodaj nowe pola do niego), aby wczytać nowe domyślne wartości; log serwera ostrzega, gdy plik pochodzi ze starszej wersji.
+
+Czas gry i historia przywołań każdego gracza są zapisywane w `$profile:ChillSpawn/players/`.
 
 ## Dodawanie poleceń (rozszerzenie)
 
@@ -86,14 +121,15 @@ modded class CS_Core
 }
 ```
 
-## Znane ograniczenia / przetestuj najpierw
+## Znane ograniczenia / testuj najpierw
 
-Kod nie został jeszcze skompilowany ani przetestowany. Sprawdź te punkty na serwerze testowym:
+Podstawowe funkcje działają na DayZ 1.30 experimental. Sprawdź te punkty na serwerze testowym przy zmianie konfiguracji lub aktualizacji gry:
 
-1. **Hook czatu (najbardziej prawdopodobny do błędów).** Mod odczytuje czat przez `MissionServer.OnEvent` z `ChatMessageEventTypeID`, więc gracze nie muszą nic instalować. [StarDZ DayZ Modding Wiki](https://github.com/StarDZ-Team/DayZ-Modding-Wiki) wymienia `ChatMessageEventTypeID` jako zdarzenie po stronie klienta, a jego poradnik dotyczący poleceń czatu używa małego moda klienckiego zamiast tego. Przetestuj to najpierw: jeśli `!help` nie zwraca odpowiedzi, serwer nie odbiera zdarzeń czatu i mod będzie wymagał części klienckiej. Zdarzenie podaje tylko nazwę nadawcy, więc gracze są dopasowywani po nazwie. Jeśli dwóch graczy ma tę samą nazwę, polecenie zostanie zignorowane.
-2. **Nazwy klas akcesoriów.** Sprawdź, czy każda klasa w `Attachments` się mocuje (serwer loguje `Could not attach …` dla tych, które nie), i czy pojazd startuje oraz jeździ.
-3. **Sprawdzanie przeszkód.** Używa `IsBoxColliding` z pudełkiem wielkości pojazdu, uniesionym 0,3 m nad ziemią, plus sprawdzenie morza/stawu. Próbuje 10 kierunków w odległościach 6, 9 i 12 m. Sprawdź, czy nie traktuje krzaków błędnie jako przeszkód i czy łapię ściany oraz płoty. Nie sprawdza nachylenia terenu, więc pojazd może nadal wylądować na stromym zboczu.
-4. **Timery znikania żyją w pamięci.** Jeśli serwer zostanie zrestartowany przed upływem czasu timera pojazdu, pojazd pozostaje w świecie jako normalny trwały pojazd. Jeśli gracz jest w pojeździe, gdy timer wygaśnie, próba usunięcia będzie powtarzana co minutę, aż gracz wysiądzie.
+1. **Hook czatu: działa.** Mod odczytuje czat przez `MissionServer.OnEvent` z `ChatMessageEventTypeID`, więc gracze nie muszą nic instalować. [StarDZ DayZ Modding Wiki](https://github.com/StarDZ-Team/DayZ-Modding-Wiki) wymienia `ChatMessageEventTypeID` jako zdarzenie po stronie klienta, ale na serwerze DayZ 1.30 experimental serwer również je otrzymuje. Zdarzenie podaje tylko imię nadawcy, więc gracze są dopasowywani po nazwie. Jeśli dwaj gracze mają tę samą nazwę, polecenie jest ignorowane.
+2. **Nazwy klas przyłączeń i zestawów.** Sprawdź każdą klasę w `Attachments` i każdy przedmiot z zestawu (log serwera drukuje `Could not attach …`, `Could not create …` lub `Could not put …` dla tych, które nie zadziałają), oraz że samochód się uruchamia i jeździ.
+3. **Ochrona pojazdu (nowe).** `Invulnerable` blokuje obrażenia dla samochodu i części, z którymi został przywołany; części dołączone później nie są chronione. `ProtectCrew` blokuje obrażenia od kolizji dla osób w środku. Żadna z nich nie chroni ludzi uderzonych przez samochód. Obie funkcje są przechowywane w pamięci, więc po restarcie serwera samochód, który jeszcze nie zniknął, staje się zwykłym pojazdem.
+4. **Sprawdzanie przeszkód.** Używa `IsBoxColliding` z polem rozmiaru samochodu, podniesionym 0,3 m nad ziemię, plus sprawdzanie morza/stawu. Próbuje 10 kierunków w odległościach 6, 9 i 12 m. Sprawdź, czy nie traktuje błędnie krzaków jako przeszkód i czy wychwytuje ściany i płoty. Nie sprawdza nachylenia terenu, więc samochód może nadal wylądować na stromym zboczu.
+5. **Timery znikania żyją w pamięci.** Jeśli serwer zostanie zrestartowany przed upływem czasu znikania samochodu, pojazd pozostaje w świecie jako zwykły trwały pojazd. Jeśli gracz jest w samochodzie, gdy czas znikania minie, próba zniknięcia jest ponawiana co minutę, aż wysiądzie.
 
 ## Budowanie
 
@@ -103,12 +139,12 @@ Kod nie został jeszcze skompilowany ani przetestowany. Sprawdź te punkty na se
 tools/build-linux.sh
 ```
 
-Spakowuje to `dist/@ChillSpawn/addons/ChillSpawn.pbo` za pomocą kreatora PBO z [RaG DayZ Tools](https://github.com/Tyson89/RaG-DayZ-Tools). RaG DayZ Tools to freeware na własnej licencji i nie jest dołączony tutaj: skrypt klonuje go do `~/.cache/rag-dayz-tools` przy pierwszym uruchomieniu, lub używa ścieżki podanej przez Ciebie (`tools/build-linux.sh /path/to/RaG-DayZ-Tools`) lub ustawionej w zmiennej `RAG_TOOLS_DIR`. Wymaga `python3` 3.10+ i `git`.
+Spakowuje to `dist/@ChillSpawn/addons/ChillSpawn.pbo` przy użyciu kreatora PBO z [RaG DayZ Tools](https://github.com/Tyson89/RaG-DayZ-Tools). RaG DayZ Tools jest darmowym oprogramowaniem na własnej licencji i nie jest dołączone tutaj: skrypt klonuje go do `~/.cache/rag-dayz-tools` przy pierwszym uruchomieniu, lub używa ścieżki, którą podasz (`tools/build-linux.sh /path/to/RaG-DayZ-Tools`) lub ustawisz w `RAG_TOOLS_DIR`. Wymaga `python3` 3.10+ i `git`.
 
-Skrypt uruchamia kontrole preflight RaG i pakuje skrypty tak, jak są. Pomija binaryzację, konwersję `config.cpp` i podpisywanie, które wymagają programów DayZ Tools dla Windowsa. Serwerowy mod tylko ze skryptami nie wymaga żadnej z tych operacji. Nic na Linuxie nie kompiluje Enforce Script, więc błędy skryptów pojawiają się dopiero w logu `.rpt` serwera przy jego starcie.
+Skrypt uruchamia kontrole wstępne RaG i pakuje skrypty tak, jak są. Pomija binaryzację, konwersję `config.cpp` i podpisywanie, co wymaga programów DayZ Tools na Windowsie. Mod do serwera tylko ze skryptami nie potrzebuje żadnego z nich. Nic na Linuxie nie kompiluje Enforce Script, więc błędy w skryptach pojawiają się dopiero w logu `.rpt` serwera przy jego starcie.
 
 Skopiuj `dist/@ChillSpawn` do folderu serwera i dodaj `-servermod=@ChillSpawn` do linii startowej.
 
 ### Windows
 
-Spakuj folder `ChillSpawn/` do `@ChillSpawn/addons/ChillSpawn.pbo` używając AddonBuildera z DayZ Tools lub RaG PBO Buildera. Same moduły serwerowe nie wymagają ściśle podpisywania, ale jeśli serwer sprawdza sygnatury, podpisz PBO i umieść `.bikey` w folderze `keys/` serwera.
+Spakuj folder `ChillSpawn/` do `@ChillSpawn/addons/ChillSpawn.pbo` przy użyciu AddonBuildera z DayZ Tools lub kreatora PBO RaG. Mody tylko dla serwera nie wymagają ściśle podpisywania, ale jeśli serwer sprawdza podpisy, podpisz PBO i umieść `.bikey` w folderze `keys/` serwera.
