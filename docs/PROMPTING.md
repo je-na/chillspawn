@@ -2,7 +2,7 @@
 
 **English** · [Slovenčina](PROMPTING.sk.md) · [Deutsch](PROMPTING.de.md) · [Українська](PROMPTING.uk.md) · [Polski](PROMPTING.pl.md) · [Français](PROMPTING.fr.md) · [Español](PROMPTING.es.md) · [Português](PROMPTING.pt.md)
 
-ChillSpawn was written in one Claude Code session (Claude Opus 5.5) on a Linux machine with no DayZ install. Claude wrote every file. The person steering it wrote the requirements, asked for changes and compared the result with two local models. Nothing was compiled or run in game during the session, so treat the code as a strong first draft that still needs a test server.
+ChillSpawn was written in one Claude Code session (Claude Opus 5.5) on a Linux machine with no DayZ install. Claude wrote every file. The person steering it wrote the requirements, asked for changes and compared the result with two local models. The first version was written without compiling or running anything. Later in the same session, a Windows dedicated server running DayZ 1.30 experimental was set up, Claude reached it over SSH, and the mod was deployed, tested in game and extended there.
 
 This page walks through the requests in order (reworded and tidied, not quoted word for word), what each one changed and what was learnt. It ends with prompts you can reuse to make a similar mod.
 
@@ -82,6 +82,38 @@ Nothing in the notes touched the APIs the mod uses. 1.30 brought a stricter scri
 
 RaG DayZ Tools is Windows-first, but its PBO builder is plain Python and runs on Linux. `tools/build-linux.sh` uses it to pack the mod. Binarising, config conversion and signing still need Windows programs, and a scripts-only server mod doesn't need them.
 
+### 9. Testing on a real server
+
+> I've set up a Windows dedicated server with CFTools Architect and opened SSH for you. Deploy the mod there and check it works.
+
+The server ran DayZ 1.30 experimental, managed by CFTools Architect. Over SSH, Claude:
+
+- copied the game's own `scripts.pbo` from the server, unpacked it and checked every function the mod calls against the real 1.30 experimental scripts. All of them existed with matching parameters;
+- built the PBO on Linux, copied `@ChillSpawn` to the server's root folder, and asked the owner to add it in Architect with **Add Local Mod**, type **Server**;
+- read the server's `.rpt` and script logs after each restart to confirm the scripts compiled and the mod loaded.
+
+`!help` and `!car` worked first time. The chat hook, the part most likely to fail, works on a server with no client mod.
+
+**Lessons:**
+
+- **Give Claude the real game scripts.** Unpacking `scripts.pbo` from the installed game turns "this API probably exists" into a quick check, and it settles questions the wikis get wrong.
+- **Swap the PBO with the server fully stopped.** A running server locks the mod file, and Architect's restart is too quick to catch.
+
+### 10. Admins, limits, protected cars and kits
+
+> Let admins spawn as much as they like. Limit players to one of each car every 15 minutes. Can spawned cars be made damage-proof, or crashes stop hurting the people inside, without a client mod? Add an admin-only `!adminkit` with [a list of weapons, armour and clothing], and a `!survive` kit players can use once every 2 real hours with [food, water, medical items].
+
+Claude read the 1.30 car code first. Crash damage to the crew is applied by server-side script (`CarScript.DamageCrew`), so a server mod can switch it off. Damage to the car itself is turned off with `SetAllowDamage(false)`. Then it added:
+
+- an `Admins` list of Steam64 IDs, with no limits and access to admin-only commands, which other players can't see;
+- limits as `MaxSpawns` per `LimitMinutes`, counted in playtime, or in real-world time for kits that ask for it;
+- `Invulnerable` and `ProtectCrew` options for presets;
+- kits: nested items (a gun with its magazine and suppressor, a backpack with its contents), full magazines and water, delivered to the inventory or the ground.
+
+Everything worked in game on the first deploy.
+
+**Lesson:** asking "can this be done server-side?" before asking for the feature gets an answer grounded in the actual game code, plus its limits: here, that people the car hits are still hurt, and protection is lost on restart.
+
 ## Prompts you can reuse
 
 ### Starting a new server-side mod
@@ -128,6 +160,8 @@ The "Enforce Script has no…" line comes straight from the mistakes the local m
 - "Add a `!list` command showing every spawnable preset and how many the player has left."
 - "Review this code [paste or attach] for things that won't compile or load in DayZ, and for logic errors against these requirements: [list]."
 - "Write a test plan I can follow on a local server to check each requirement."
+- "Here's SSH access to my server. Check every API the mod uses against the game's own scripts before deploying."
+- "Can [feature] be done server-side only? Check the game's scripts and tell me what it can't cover."
 
 ### Tips
 
@@ -135,4 +169,5 @@ The "Enforce Script has no…" line comes straight from the mistakes the local m
 - **Say what "per hour" means.** "Per hour of playtime" and "per hour of server time" are different features, and only one of them survives a reconnect.
 - **Ask for a "known limits" section** and treat it as your test list.
 - **Test on a local server before going live.** Watch the server `.rpt` log for script errors and lines like `[ChillSpawn] Could not attach …`.
+- **Give Claude SSH access to a test server** if you can. It can then deploy, read the logs and check the game's own scripts, which turns guesses into checks.
 - **On Windows with DayZ Tools installed**, the [Agentic-Z](https://github.com/DayZ-n-Chill/Agentic-Z) plugin for Claude Code adds DayZ-specific agents and skills that build PBOs and launch a local test server, which closes the "untested" gap.

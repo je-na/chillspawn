@@ -8,7 +8,7 @@ Players can also type `!survive` once every 2 real hours for a small survival ki
 
 Clients don't need the mod. Load it with `-servermod=@ChillSpawn`. Written for DayZ 1.30.
 
-> **Status: tested on DayZ 1.30 experimental.** `!help`, `!list`, `!car`, `!ada` and `!hatchet` work on a live server with no client mod. Admins, kits, `!survive` and car protection are new and not yet tested. See [Known limits / test first](#known-limits--test-first). [docs/PROMPTING.md](docs/PROMPTING.md) shows how it was made.
+> **Status: tested on DayZ 1.30 experimental.** Every command, admins, kits and car protection work on a live server with no client mod. See [Known limits / test first](#known-limits--test-first). [docs/PROMPTING.md](docs/PROMPTING.md) shows how it was made.
 
 ## Layout
 
@@ -125,7 +125,7 @@ The basics work on DayZ 1.30 experimental. Check these on a test server when cha
 
 1. **Chat hook: works.** The mod reads chat through `MissionServer.OnEvent` with `ChatMessageEventTypeID`, so players don't need to install anything. The [StarDZ DayZ Modding Wiki](https://github.com/StarDZ-Team/DayZ-Modding-Wiki) lists `ChatMessageEventTypeID` as a client-side event, but on a DayZ 1.30 experimental server the server receives it too. The event only gives the sender's name, so players are matched by name. If two players share a name, the command is ignored.
 2. **Attachment and kit class names.** Check every class in `Attachments` and every kit item spawns (the server log prints `Could not attach …`, `Could not create …` or `Could not put …` for any that don't), and that the car starts and drives.
-3. **Car protection (new).** `Invulnerable` stops damage to the car and the parts it spawned with; parts fitted later aren't protected. `ProtectCrew` stops crash damage to the people inside. Neither protects people the car hits. Both are kept in memory, so after a server restart a car that hasn't despawned yet is an ordinary car again.
+3. **Car protection.** `Invulnerable` stops damage to the car and the parts it spawned with; parts fitted later aren't protected. `ProtectCrew` stops crash damage to the people inside. Neither protects people the car hits. Both are kept in memory, so after a server restart a car that hasn't despawned yet is an ordinary car again.
 4. **Obstacle check.** Uses `IsBoxColliding` with a box the size of the car, lifted 0.3 m off the ground, plus a sea/pond check. It tries 10 directions at 6, 9 and 12 m. Check it doesn't wrongly treat bushes as obstacles, and that it catches walls and fences. It doesn't check slope, so a car can still land on a steep hillside.
 5. **Despawn timers live in memory.** If the server restarts before a car's timer runs out, the car stays in the world as a normal persistent vehicle. If a player is in the car when the timer runs out, the despawn is retried every minute until they get out.
 
@@ -141,8 +141,17 @@ This packs `dist/@ChillSpawn/addons/ChillSpawn.pbo` with the PBO builder from [R
 
 The script runs RaG's preflight checks and packs the scripts as they are. It skips binarising, `config.cpp` conversion and signing, which need Windows DayZ Tools programs. A scripts-only server mod doesn't need any of them. Nothing on Linux compiles Enforce Script, so script errors only show up in the server's `.rpt` log when it starts.
 
-Copy `dist/@ChillSpawn` into the server folder and add `-servermod=@ChillSpawn` to the start line.
-
 ### Windows
 
 Pack the `ChillSpawn/` folder into `@ChillSpawn/addons/ChillSpawn.pbo` with DayZ Tools' AddonBuilder or the RaG PBO Builder. Server-only mods don't strictly need signing, but if the server checks signatures, sign the PBO and put the `.bikey` in the server's `keys/` folder.
+
+## Installing
+
+1. Copy the `@ChillSpawn` folder into the server's root folder, next to `DayZServer_x64.exe`.
+2. Load it as a server mod:
+   - **Plain server:** add `-servermod=@ChillSpawn` to the start line.
+   - **CFTools Architect:** use **Add Local Mod**, choose `@ChillSpawn` and set its type to **Server**.
+3. Start the server. It writes `profiles/ChillSpawn/config.json` and logs `[ChillSpawn] Loaded … spawn presets, … kits and … admins.`
+4. Add your admins' Steam64 IDs to `Admins` in that file and restart.
+
+**Updating:** stop the server fully before replacing `ChillSpawn.pbo`. A running server locks the file, and a quick restart may not leave time to swap it.
