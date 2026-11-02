@@ -1,6 +1,7 @@
 {
-    "Version": 1,
+    "Version": 2,
     "CommandPrefix": "!",
+    "Admins": [],
     "Presets": [
         {
             "Command": "car",
@@ -26,12 +27,16 @@
             "DistanceMetres": 6.0,
             "BearingDegrees": 0.0,
             "DespawnSeconds": 900,
-            "MaxPerPlaytimeHour": 3,
+            "MaxSpawns": 1,
+            "LimitMinutes": 15,
+            "AdminOnly": false,
             "SpawnMessage": "Your %1 has spawned. It will despawn within %2 minutes.",
             "FuelFraction": 1.0,
             "CoolantFraction": 1.0,
             "OilFraction": 1.0,
             "BrakeFluidFraction": 1.0,
+            "Invulnerable": true,
+            "ProtectCrew": true,
             "ClearanceWidth": 2.5,
             "ClearanceLength": 5.0,
             "ClearanceHeight": 2.0
@@ -58,14 +63,18 @@
             "DistanceMetres": 6.0,
             "BearingDegrees": 0.0,
             "DespawnSeconds": 900,
-            "MaxPerPlaytimeHour": 3,
+            "MaxSpawns": 1,
+            "LimitMinutes": 15,
+            "AdminOnly": false,
             "SpawnMessage": "Your %1 has spawned. It will despawn within %2 minutes.",
             "FuelFraction": 1.0,
             "CoolantFraction": 1.0,
             "OilFraction": 1.0,
             "BrakeFluidFraction": 1.0,
+            "Invulnerable": true,
+            "ProtectCrew": true,
             "ClearanceWidth": 2.5,
-            "ClearanceLength": 4.5,
+            "ClearanceLength": 5.0,
             "ClearanceHeight": 2.0
         },
         {
@@ -76,15 +85,199 @@
             "DistanceMetres": 1.0,
             "BearingDegrees": 0.0,
             "DespawnSeconds": 900,
-            "MaxPerPlaytimeHour": 3,
+            "MaxSpawns": 3,
+            "LimitMinutes": 60,
+            "AdminOnly": false,
             "SpawnMessage": "Your %1 has spawned. It will despawn within %2 minutes.",
-            "FuelFraction": 0.0,
-            "CoolantFraction": 0.0,
-            "OilFraction": 0.0,
-            "BrakeFluidFraction": 0.0,
+            "FuelFraction": 1.0,
+            "CoolantFraction": 1.0,
+            "OilFraction": 1.0,
+            "BrakeFluidFraction": 1.0,
+            "Invulnerable": false,
+            "ProtectCrew": false,
             "ClearanceWidth": 0.5,
             "ClearanceLength": 0.5,
             "ClearanceHeight": 0.3
+        }
+    ],
+    "Kits": [
+        {
+            "Command": "survive",
+            "DisplayName": "survival kit",
+            "MaxSpawns": 1,
+            "LimitMinutes": 120,
+            "RealTimeLimit": true,
+            "AdminOnly": false,
+            "ToInventory": true,
+            "Items": [
+                {
+                    "ClassName": "TacticalBaconCan",
+                    "Count": 1,
+                    "Contents": []
+                },
+                {
+                    "ClassName": "WaterBottle",
+                    "Count": 1,
+                    "Contents": []
+                },
+                {
+                    "ClassName": "PurificationTablets",
+                    "Count": 1,
+                    "Contents": []
+                },
+                {
+                    "ClassName": "BandageDressing",
+                    "Count": 1,
+                    "Contents": []
+                },
+                {
+                    "ClassName": "TetracyclineAntibiotics",
+                    "Count": 1,
+                    "Contents": []
+                }
+            ]
+        },
+        {
+            "Command": "adminkit",
+            "DisplayName": "admin kit",
+            "MaxSpawns": 1,
+            "LimitMinutes": 60,
+            "RealTimeLimit": false,
+            "AdminOnly": true,
+            "ToInventory": false,
+            "Items": [
+                {
+                    "ClassName": "AliceBag_Green",
+                    "Count": 1,
+                    "Contents": [
+                        {
+                            "ClassName": "Mag_M14_20Rnd",
+                            "Count": 2,
+                            "Contents": []
+                        },
+                        {
+                            "ClassName": "AmmoBox_308Win_20Rnd",
+                            "Count": 3,
+                            "Contents": []
+                        },
+                        {
+                            "ClassName": "Mag_STANAG_60Rnd",
+                            "Count": 2,
+                            "Contents": []
+                        },
+                        {
+                            "ClassName": "M4_Suppressor",
+                            "Count": 1,
+                            "Contents": []
+                        },
+                        {
+                            "ClassName": "Battery9V",
+                            "Count": 1,
+                            "Contents": []
+                        },
+                        {
+                            "ClassName": "HuntingKnife",
+                            "Count": 1,
+                            "Contents": []
+                        }
+                    ]
+                },
+                {
+                    "ClassName": "M14",
+                    "Count": 1,
+                    "Contents": [
+                        {
+                            "ClassName": "Mag_M14_20Rnd",
+                            "Count": 1,
+                            "Contents": []
+                        }
+                    ]
+                },
+                {
+                    "ClassName": "M4A1",
+                    "Count": 1,
+                    "Contents": [
+                        {
+                            "ClassName": "M4_MPBttstck",
+                            "Count": 1,
+                            "Contents": []
+                        },
+                        {
+                            "ClassName": "M4_RISHndgrd",
+                            "Count": 1,
+                            "Contents": []
+                        },
+                        {
+                            "ClassName": "M4_CarryHandleOptic",
+                            "Count": 1,
+                            "Contents": []
+                        },
+                        {
+                            "ClassName": "M4_Suppressor",
+                            "Count": 1,
+                            "Contents": []
+                        },
+                        {
+                            "ClassName": "Mag_STANAG_60Rnd",
+                            "Count": 1,
+                            "Contents": []
+                        }
+                    ]
+                },
+                {
+                    "ClassName": "PlateCarrierVest",
+                    "Count": 1,
+                    "Contents": [
+                        {
+                            "ClassName": "PlateCarrierHolster",
+                            "Count": 1,
+                            "Contents": []
+                        },
+                        {
+                            "ClassName": "PlateCarrierPouches",
+                            "Count": 1,
+                            "Contents": []
+                        }
+                    ]
+                },
+                {
+                    "ClassName": "Mich2001Helmet",
+                    "Count": 1,
+                    "Contents": [
+                        {
+                            "ClassName": "NVGoggles",
+                            "Count": 1,
+                            "Contents": [
+                                {
+                                    "ClassName": "Battery9V",
+                                    "Count": 1,
+                                    "Contents": []
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "ClassName": "TTsKOJacket_Camo",
+                    "Count": 1,
+                    "Contents": []
+                },
+                {
+                    "ClassName": "TTSKOPants",
+                    "Count": 1,
+                    "Contents": []
+                },
+                {
+                    "ClassName": "TTSKOBoots",
+                    "Count": 1,
+                    "Contents": []
+                },
+                {
+                    "ClassName": "TacticalGloves_Green",
+                    "Count": 1,
+                    "Contents": []
+                }
+            ]
         }
     ]
 }

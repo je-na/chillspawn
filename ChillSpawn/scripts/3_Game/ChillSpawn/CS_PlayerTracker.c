@@ -2,6 +2,45 @@ class CS_SpawnEntry
 {
 	string Preset;
 	float Playtime;		// player's playtime in seconds when they spawned it
+	int RealTime;		// CS_Clock.Now() when they spawned it
+}
+
+// Real-world time as seconds since 2000-01-01 UTC, so limits survive restarts.
+class CS_Clock
+{
+	static int Now()
+	{
+		int year, month, day, hour, minute, second;
+		GetYearMonthDayUTC(year, month, day);
+		GetHourMinuteSecondUTC(hour, minute, second);
+		return DaysSince2000(year, month, day) * 86400 + hour * 3600 + minute * 60 + second;
+	}
+
+	protected static int DaysSince2000(int year, int month, int day)
+	{
+		array<int> monthDays = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+		int days = 0;
+
+		for (int y = 2000; y < year; y++)
+			days += 365 + IsLeap(y);
+
+		for (int m = 1; m < month; m++)
+		{
+			days += monthDays[m - 1];
+			if (m == 2)
+				days += IsLeap(year);
+		}
+
+		return days + day - 1;
+	}
+
+	protected static int IsLeap(int year)
+	{
+		if ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0)
+			return 1;
+
+		return 0;
+	}
 }
 
 class CS_PlayerRecord
@@ -15,13 +54,14 @@ class CS_PlayerRecord
 	}
 }
 
-// Tracks each player's time in game and their spawn history, so limits are
-// "per hour of playtime" rather than per wall-clock hour. Saved per player under
+// Tracks each player's time in game and their spawn history, so limits count
+// playtime rather than wall-clock time. Saved per player under
 // $profile:ChillSpawn/players/.
 class CS_PlayerTracker
 {
 	static const string DIR = "$profile:ChillSpawn/players";
-	static const float WINDOW_SECONDS = 3600;
+	// History older than this is dropped, so limits can be up to a day of playtime.
+	static const float HISTORY_SECONDS = 86400;
 
 	protected ref map<string, ref CS_PlayerRecord> m_Records;
 	protected ref map<string, int> m_SessionStartMs;
@@ -63,28 +103,36 @@ class CS_PlayerTracker
 		return rec.PlaytimeSeconds + elapsedMs / 1000.0;
 	}
 
-	// Spawns of this preset within the last hour of playtime. waitSeconds is how
-	// much more playtime frees the oldest slot.
-	int CountRecentSpawns(string id, string preset, out float waitSeconds)
+	// Spawns of this preset within the last windowSeconds of playtime, or of
+	// real-world time when realTime is set. waitSeconds is how long until the
+	// oldest slot frees up.
+	int CountRecentSpawns(string id, string preset, float windowSeconds, bool realTime, out float waitSeconds)
 	{
 		CS_PlayerRecord rec = GetRecord(id);
 		float now = GetPlaytime(id);
+		if (realTime)
+			now = CS_Clock.Now();
+
 		float oldest = -1;
 		int count = 0;
 
 		foreach (CS_SpawnEntry entry : rec.Spawns)
 		{
-			if (entry.Preset != preset || entry.Playtime <= now - WINDOW_SECONDS)
+			float when = entry.Playtime;
+			if (realTime)
+				when = entry.RealTime;
+
+			if (entry.Preset != preset || when <= now - windowSeconds)
 				continue;
 
 			count++;
-			if (oldest < 0 || entry.Playtime < oldest)
-				oldest = entry.Playtime;
+			if (oldest < 0 || when < oldest)
+				oldest = when;
 		}
 
 		waitSeconds = 0;
 		if (oldest >= 0)
-			waitSeconds = oldest + WINDOW_SECONDS - now;
+			waitSeconds = oldest + windowSeconds - now;
 
 		return count;
 	}
@@ -94,6 +142,7 @@ class CS_PlayerTracker
 		CS_SpawnEntry entry = new CS_SpawnEntry();
 		entry.Preset = preset;
 		entry.Playtime = GetPlaytime(id);
+		entry.RealTime = CS_Clock.Now();
 		GetRecord(id).Spawns.Insert(entry);
 		Flush(id);
 	}
@@ -114,17 +163,19 @@ class CS_PlayerTracker
 		return rec;
 	}
 
-	// Folds the current session into the stored playtime, drops history older
-	// than the window and writes the file.
+	// Folds the current session into the stored playtime, drops old history and
+	// writes the file.
 	protected void Flush(string id)
 	{
 		CS_PlayerRecord rec = GetRecord(id);
 		rec.PlaytimeSeconds = GetPlaytime(id);
 		m_SessionStartMs.Set(id, GetGame().GetTime());
 
+		int now = CS_Clock.Now();
 		for (int i = rec.Spawns.Count() - 1; i >= 0; i--)
 		{
-			if (rec.Spawns[i].Playtime <= rec.PlaytimeSeconds - WINDOW_SECONDS)
+			CS_SpawnEntry entry = rec.Spawns[i];
+			if (entry.Playtime <= rec.PlaytimeSeconds - HISTORY_SECONDS && entry.RealTime <= now - HISTORY_SECONDS)
 				rec.Spawns.Remove(i);
 		}
 

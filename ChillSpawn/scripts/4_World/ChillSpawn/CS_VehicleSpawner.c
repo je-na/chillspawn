@@ -52,6 +52,13 @@ class CS_VehicleSpawner
 			FillFluid(car, CarFluid.BRAKE, preset.BrakeFluidFraction);
 		}
 
+		if (preset.Invulnerable)
+			MakeInvulnerable(ent);
+
+		CarScript carScript = CarScript.Cast(ent);
+		if (carScript && preset.ProtectCrew)
+			carScript.CS_SetProtectCrew(true);
+
 		if (preset.DespawnSeconds > 0)
 			GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(Despawn, preset.DespawnSeconds * 1000, false, ent);
 
@@ -101,6 +108,19 @@ class CS_VehicleSpawner
 		excluded.Insert(player);
 
 		return !GetGame().IsBoxColliding(centre, Vector(yaw, 0, 0), size, excluded);
+	}
+
+	// No damage to the entity or anything attached to it when it spawned.
+	protected void MakeInvulnerable(EntityAI ent)
+	{
+		ent.SetAllowDamage(false);
+
+		for (int i = 0; i < ent.GetInventory().AttachmentCount(); i++)
+		{
+			EntityAI att = ent.GetInventory().GetAttachmentFromIndex(i);
+			if (att)
+				att.SetAllowDamage(false);
+		}
 	}
 
 	protected void FillFluid(Car car, CarFluid fluid, float fraction)
